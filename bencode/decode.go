@@ -8,6 +8,8 @@ import (
 	"strconv"
 )
 
+// need this if unmarshaling to a map, bcoz we cant directly set on a mapindex
+// otherwise can directly pass reflect.Value
 type builder struct {
 	V   reflect.Value
 	Map reflect.Value

@@ -8,7 +8,7 @@ import (
 
 type tt struct {
 	Test string `bencode:"t"`
-	T string `bencode:"est"`
+	T    string `bencode:"est"`
 }
 
 type t2 struct {
