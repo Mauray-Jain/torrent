@@ -14,5 +14,6 @@ func Unmarshal(r io.Reader, v any) error {
 		return errors.New("v is not a pointer")
 	}
 	reader := bufio.NewReader(r)
-	return parse(reader, val.Elem())
+	b := builder{V: val.Elem()}
+	return parse(reader, &b)
 }

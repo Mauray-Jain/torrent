@@ -1,7 +1,6 @@
 package bencode
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 )
@@ -58,15 +57,13 @@ func getIndex(v reflect.Value, i int) reflect.Value {
 func getKey(v reflect.Value, s string) reflect.Value {
 	switch v.Kind() {
 	case reflect.Map:
-		panic("TODO")
-		// key := reflect.ValueOf(s)
-		// elem := v.MapIndex(key)
-		// if !elem.IsValid() {
-		// 	v.SetMapIndex(key, reflect.Zero(v.Type().Elem()))
-		// 	elem = v.MapIndex(key)
-		// }
-		// fmt.Println(s, elem.CanSet())
-		// return elem
+		key := reflect.ValueOf(s)
+		elem := v.MapIndex(key)
+		if !elem.IsValid() {
+			v.SetMapIndex(key, reflect.Zero(v.Type().Elem()))
+			elem = v.MapIndex(key)
+		}
+		return elem
 
 	case reflect.Struct:
 		t := v.Type()

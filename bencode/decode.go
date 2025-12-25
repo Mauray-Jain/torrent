@@ -8,12 +8,18 @@ import (
 	"strconv"
 )
 
-func parse(r *bufio.Reader, v reflect.Value) error {
+type builder struct {
+	V   reflect.Value
+	Map reflect.Value
+	Key reflect.Value
+}
+
+func parse(r *bufio.Reader, b *builder) error {
 	c, err := r.ReadByte()
 	if err != nil {
 		return err
 	}
-	
+
 	switch {
 	case '0' <= c && c <= '9': // string
 		err = r.UnreadByte()
@@ -24,16 +30,25 @@ func parse(r *bufio.Reader, v reflect.Value) error {
 		if err != nil {
 			return err
 		}
-		setString(v, s)
+		if b.Map.IsValid() {
+			b.Map.SetMapIndex(b.Key, reflect.ValueOf(s))
+		} else {
+			setString(b.V, s)
+		}
 
 	case c == 'i': // int
 		i, err := parseInt(r)
 		if err != nil {
 			return err
 		}
-		setInt(v, i)
+		if b.Map.IsValid() {
+			b.Map.SetMapIndex(b.Key, reflect.ValueOf(i))
+		} else {
+			setInt(b.V, i)
+		}
 
 	case c == 'l': // list
+		v := b.V
 		if v.Kind() == reflect.Slice && v.IsNil() {
 			v.Set(reflect.MakeSlice(v.Type(), 0, 8))
 		}
@@ -52,15 +67,20 @@ func parse(r *bufio.Reader, v reflect.Value) error {
 			}
 
 			val_at_i := getIndex(v, i)
-			if err = parse(r, val_at_i); err != nil {
+			nb := builder{V: val_at_i}
+			if err = parse(r, &nb); err != nil {
 				return err
 			}
 			i += 1
 		}
 
 	case c == 'd': // dict
-		if v.Kind() == reflect.Map && v.IsNil() {
-			v.Set(reflect.MakeMap(v.Type()))
+		v := b.V
+		if v.Kind() == reflect.Map {
+			b.Map = v
+			if v.IsNil() {
+				v.Set(reflect.MakeMap(v.Type()))
+			}
 		}
 		for {
 			c, err := r.ReadByte()
@@ -81,7 +101,8 @@ func parse(r *bufio.Reader, v reflect.Value) error {
 			}
 
 			val_at_key := getKey(v, key)
-			if err = parse(r, val_at_key); err != nil {
+			nb := builder{V: val_at_key, Map: b.Map, Key: reflect.ValueOf(key)}
+			if err = parse(r, &nb); err != nil {
 				return err
 			}
 		}
@@ -99,7 +120,7 @@ func parseStr(r *bufio.Reader) (string, error) {
 		return "", err
 	}
 
-	length, err := strconv.ParseInt(len_str[:len(len_str) - 1], 10, 64)
+	length, err := strconv.ParseInt(len_str[:len(len_str)-1], 10, 64)
 	if err != nil {
 		return "", err
 	}
@@ -112,7 +133,7 @@ func parseStr(r *bufio.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(buf), nil
 }
 
@@ -121,5 +142,5 @@ func parseInt(r *bufio.Reader) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return strconv.Atoi(str[:len(str) - 1])
+	return strconv.Atoi(str[:len(str)-1])
 }
