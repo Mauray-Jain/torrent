@@ -32,22 +32,14 @@ func parse(r *bufio.Reader, b *builder) error {
 		if err != nil {
 			return err
 		}
-		if b.Map.IsValid() {
-			b.Map.SetMapIndex(b.Key, reflect.ValueOf(s))
-		} else {
-			setString(b.V, s)
-		}
+		setString(b.V, s)
 
 	case c == 'i': // int
 		i, err := parseInt(r)
 		if err != nil {
 			return err
 		}
-		if b.Map.IsValid() {
-			b.Map.SetMapIndex(b.Key, reflect.ValueOf(i))
-		} else {
-			setInt(b.V, i)
-		}
+		setInt(b.V, i)
 
 	case c == 'l': // list
 		v := b.V
@@ -78,8 +70,10 @@ func parse(r *bufio.Reader, b *builder) error {
 
 	case c == 'd': // dict
 		v := b.V
+		isMap := false
 		if v.Kind() == reflect.Map {
 			b.Map = v
+			isMap = true
 			if v.IsNil() {
 				v.Set(reflect.MakeMap(v.Type()))
 			}
@@ -103,9 +97,19 @@ func parse(r *bufio.Reader, b *builder) error {
 			}
 
 			val_at_key := getKey(v, key)
+			if isMap { // if it is a map get an addressable copy of val_at_key
+				copy_of_val := reflect.New(val_at_key.Type()).Elem()
+				copy_of_val.Set(val_at_key)
+				val_at_key = copy_of_val
+			}
+
 			nb := builder{V: val_at_key, Map: b.Map, Key: reflect.ValueOf(key)}
 			if err = parse(r, &nb); err != nil {
 				return err
+			}
+
+			if isMap { // after copy of val_at_key is set set it in the map too
+				nb.Map.SetMapIndex(nb.Key, nb.V)
 			}
 		}
 

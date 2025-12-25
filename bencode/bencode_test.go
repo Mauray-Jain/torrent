@@ -21,14 +21,16 @@ func TestUnmarshal(t *testing.T) {
 	s3 := "l3:asa4:abcde"
 	s4 := "d1:t3:asa3:est2:aae"
 	s5 := "d1:al2:bb2:ccee"
+	s6 := "d1:ad2:bbi2eee"
 	var s string
 	var i int
 	var l []string
 	var l2 [3]string
 	var m map[string]string
-	// var m2 map[string][2]string
 	var x tt
+	var m2 map[string][2]string
 	var x2 t2
+	var m3 map[string]any
 	Unmarshal(strings.NewReader(s1), &s)
 	fmt.Println(s)
 	Unmarshal(strings.NewReader(s2), &i)
@@ -43,6 +45,8 @@ func TestUnmarshal(t *testing.T) {
 	fmt.Println(m)
 	Unmarshal(strings.NewReader(s5), &x2)
 	fmt.Println(x2)
-	// Unmarshal(strings.NewReader(s5), &m2) // fails
-	// fmt.Println(m2)
+	Unmarshal(strings.NewReader(s5), &m2)
+	fmt.Println(m2)
+	Unmarshal(strings.NewReader(s6), &m3)
+	fmt.Println(m3)
 }
