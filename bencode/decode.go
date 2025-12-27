@@ -43,11 +43,16 @@ func parse(r *bufio.Reader, b *builder) error {
 
 	case c == 'l': // list
 		v := b.V
+		if v.Kind() == reflect.Interface {
+			// https://github.com/zeebo/bencode/blob/master/decode.go
+			var x []any
+			defer func(p reflect.Value) { p.Set(v) }(v) // idk how this works
+			v = reflect.ValueOf(&x).Elem()
+		}
 		if v.Kind() == reflect.Slice && v.IsNil() {
 			v.Set(reflect.MakeSlice(v.Type(), 0, 8))
 		}
-		i := 0
-		for {
+		for i := 0; ; i += 1 {
 			c, err := r.ReadByte()
 			if err != nil {
 				return err
@@ -65,12 +70,16 @@ func parse(r *bufio.Reader, b *builder) error {
 			if err = parse(r, &nb); err != nil {
 				return err
 			}
-			i += 1
 		}
 
 	case c == 'd': // dict
 		v := b.V
 		isMap := false
+		if v.Kind() == reflect.Interface {
+			var x map[string]any
+			defer func(p reflect.Value) { p.Set(v) }(v)
+			v = reflect.ValueOf(&x).Elem()
+		}
 		if v.Kind() == reflect.Map {
 			b.Map = v
 			isMap = true
@@ -109,7 +118,7 @@ func parse(r *bufio.Reader, b *builder) error {
 			}
 
 			if isMap { // after copy of val_at_key is set set it in the map too
-				nb.Map.SetMapIndex(nb.Key, nb.V)
+				b.Map.SetMapIndex(nb.Key, val_at_key)
 			}
 		}
 
